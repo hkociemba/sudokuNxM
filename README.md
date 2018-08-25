@@ -1,4 +1,4 @@
-# sudokuNxM solver and generaotr
+# sudokuNxM solver and generator
 
 
 ![](gui.jpg "")
