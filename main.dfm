@@ -382,7 +382,7 @@ object Form1: TForm1
       71)
     object BPrintPuzzle: TButton
       Left = 17
-      Top = 37
+      Top = 40
       Width = 104
       Height = 26
       Anchors = [akLeft, akBottom]
@@ -486,7 +486,7 @@ object Form1: TForm1
     object BCreate: TButton
       Left = 16
       Top = 48
-      Width = 113
+      Width = 121
       Height = 25
       Caption = 'Random Grid'
       TabOrder = 0
@@ -495,7 +495,7 @@ object Form1: TForm1
     object BDefault: TButton
       Left = 16
       Top = 17
-      Width = 113
+      Width = 121
       Height = 25
       Caption = 'Default Grid'
       TabOrder = 1
@@ -509,6 +509,15 @@ object Form1: TForm1
       Caption = 'Shuffle Grid'
       TabOrder = 2
       OnClick = BPermuteClick
+    end
+    object BLowClueGrid: TButton
+      Left = 16
+      Top = 95
+      Width = 121
+      Height = 25
+      Caption = 'Few Clues Default Grid'
+      TabOrder = 3
+      OnClick = BLowClueGridClick
     end
   end
   object OpenDialog1: TOpenDialog

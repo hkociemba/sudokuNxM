@@ -1,6 +1,6 @@
 unit main;
 
-// {$Define BIG}
+{$Define BIG}
 
 interface
 
@@ -11,17 +11,14 @@ uses
   Vcl.Menus, Vcl.ExtCtrls;
 
 const
+
 {$IFDEF BIG}
-  N_BIG = 7; // Ceiling(DIM/64)
-{$ELSE}
-  N_BIG = 4;
-{$ENDIF}
-{$IFDEF BIG}
-  N_MAXBOXLENGTH = 31;
+  N_MAXBOXLENGTH = 20; // Values up to 31 possible
+  N_BIG = (N_MAXBOXLENGTH * N_MAXBOXLENGTH) div 64 + 1;
 {$ELSE}
   N_MAXBOXLENGTH = 15;
+  N_BIG = 4;
 {$ENDIF}
-
   STRICT_POINTCLAIM = false;
   // for pointing/claiming are two elements needed if true;
 
@@ -80,6 +77,7 @@ type
     BPermute: TButton;
     CheckSudokuP: TCheckBox;
     BReduceSAT: TButton;
+    BLowClueGrid: TButton;
     procedure BSATSolverClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure BLoadClick(Sender: TObject);
@@ -100,6 +98,7 @@ type
     procedure BDefaultClick(Sender: TObject);
     procedure BPermuteClick(Sender: TObject);
     procedure BReduceSATClick(Sender: TObject);
+    procedure BLowClueGridClick(Sender: TObject);
   private
     nochange: Boolean;
     sym: Integer; // demanded symmetry for puzzle enries
@@ -116,6 +115,7 @@ type
   end;
 
 {$IFDEF BIG}
+
   ByteArr = array of Word;
 {$ELSE}
   ByteArr = array of Byte;
@@ -632,7 +632,7 @@ end;
 
 procedure setNumber(r, c, n: Integer);
 var
-   j, b, p: Integer;
+  j, b, p: Integer;
 begin
   Inc(n_set);
   b := B_ROW * (r div B_ROW) + c div B_COL;
@@ -666,7 +666,7 @@ end;
 
 procedure deleteNumber(r, c, n: Integer);
 var
-   j, b, p: Integer;
+  j, b, p: Integer;
 begin
   Dec(n_set);
   b := B_ROW * (r div B_ROW) + c div B_COL;
@@ -949,8 +949,6 @@ begin
         Exit; // try simpler methods
     end;
 end;
-
-
 
 procedure hidden_tuple_singlepset(n_tup, pset, start, todo: Integer;
   bitmask: BigInteger);
@@ -1912,7 +1910,6 @@ begin
   end;
 end;
 // ******************************************************************************
-
 
 procedure block_candidates_in_row;
 var
@@ -2995,6 +2992,7 @@ begin
   if not stopComputation then
   begin
     PrintCurrentPuzzle;
+    initBitArraysFromGivens;
     BCreate.Caption := 'Random Grid';
   end
   else
@@ -3035,6 +3033,8 @@ begin
   for i := 0 to DIM2 - 1 do
     rc_set[i] := t2[i div DIM, i mod DIM] + 1;
   PrintCurrentPuzzle;
+  initBitArraysFromGivens;
+
   BSATSolver.Enabled := true;
   BReduceBasic.Enabled := true;
   BReduceSAT.Enabled := true;
@@ -3094,6 +3094,74 @@ begin
   end;
   sl.Free;
   OpenDialog1.Free;
+end;
+
+procedure TForm1.BLowClueGridClick(Sender: TObject);
+var
+  i, j, k: Integer;
+  t1, t2: array of ByteArr;
+  a: array of Integer;
+  b: array of array of Integer;
+begin
+  if CheckSudokuX.Checked then
+  begin
+    Memo1.Lines.Add('');
+    Memo1.Lines.Add('Default Grid not implemented for SudokuX');
+    Memo1.Lines.Add('');
+    Exit;
+  end;
+  SetLength(t1, DIM, DIM);
+  SetLength(t2, DIM, DIM);
+  for i := 0 to DIM - 1 do
+    for j := 0 to DIM - 1 do
+      t1[i, j] := (i + j) mod DIM;
+
+  for k := 0 to B_COL - 1 do
+    for i := 0 to B_ROW - 1 do
+      for j := 0 to DIM - 1 do
+        t2[i + B_ROW * k, j] := t1[B_COL * i + k, j];
+
+  for i := 0 to DIM2 - 1 do
+    rc_set[i] := t2[i div DIM, i mod DIM] + 1;
+
+  SetLength(a, B_ROW);
+  SetLength(b, DIM, DIM);
+  for i := 0 to B_ROW - 1 do
+    a[i] := i;
+
+  for i := 0 to B_ROW - 1 do
+    a[i] := B_ROW - 1 - i;
+
+  for i := 0 to B_ROW - 1 do // stacks
+    for j := 0 to B_COL - 1 do // columns within stack
+      for k := 0 to DIM - 1 do // elements of column
+        b[k, B_COL * a[i] + j] := rc_set[DIM * k + B_COL * i + j];
+  for i := 0 to B_ROW - 1 do
+    for j := 0 to B_COL - 1 do
+      for k := 0 to DIM - 1 do
+      begin
+        if (i = 0) and (j < B_COL) and (k mod B_ROW = B_ROW - 1) and
+          (j >= B_COL - k div B_ROW) then
+          rc_set[DIM * k + B_COL * i + j] := b[k, B_COL * i + j]
+        else if (i > 0) and (i <= B_ROW div 2 - 1) and
+          (k mod B_ROW > B_ROW - 1 - i) then
+          rc_set[DIM * k + B_COL * i + j] := b[k, B_COL * i + j]
+        else if (i > B_ROW div 2 - 1) and (k mod B_ROW > B_ROW - 1 - i) and
+          (k mod B_ROW <= B_ROW - 1 - i + B_ROW div 2) then
+          rc_set[DIM * k + B_COL * i + j] := b[k, B_COL * i + j]
+
+        else
+          rc_set[DIM * k + B_COL * i + j] := 0;
+      end;
+
+  PrintCurrentPuzzle;
+  initBitArraysFromGivens;
+  Memo1.Lines.Add(IntToStr(n_set) + ' givens, ' + IntToStr(DIM3 - n_cand_del) +
+    ' candidates(pencilmarks).');
+  Memo1.Lines.Add('');
+  BSATSolver.Enabled := true;
+  BReduceBasic.Enabled := true;
+  BReduceSAT.Enabled := true;
 end;
 
 procedure TForm1.Paste1Click(Sender: TObject);
@@ -3933,17 +4001,17 @@ begin
 
       for j := 0 to DIM2 - 1 do
         rc_set[j] := rc_setsave[j];
-      // in case of success  rc_setsave holds the new
+      // in case of success rc_setsave holds the new
       // configuration. Else it holds the original configuration
     end;
 
-    //clauseLimit := clauseLimit + deltalimit;
+    // clauseLimit := clauseLimit + deltalimit;
     alldone := true;
     for i := 0 to DIM2 - 1 do
       if removable[i] and (rc_set[i] <> 0) then
         alldone := false;
   until stopComputation or alldone;
-  Memo1.Lines.Add('');
+  Memo1.Lines.Add(' ');
   initBitArraysFromGivens;
   PrintCurrentPuzzle;
   Memo1.Lines.Add('');
