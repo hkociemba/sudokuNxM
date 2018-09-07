@@ -3009,7 +3009,7 @@ end;
 // Button "Default grid" click
 procedure TForm1.BDefaultClick(Sender: TObject);
 var
-  i, j, k: Integer;
+  b, k: Integer;
   t1, t2: array of ByteArr;
 begin
   if CheckSudokuX.Checked then
@@ -3019,19 +3019,10 @@ begin
     Memo1.Lines.Add('');
     Exit;
   end;
-  SetLength(t1, DIM, DIM);
-  SetLength(t2, DIM, DIM);
-  for i := 0 to DIM - 1 do
-    for j := 0 to DIM - 1 do
-      t1[i, j] := (i + j) mod DIM;
-
-  for k := 0 to B_COL - 1 do
-    for i := 0 to B_ROW - 1 do
-      for j := 0 to DIM - 1 do
-        t2[i + B_ROW * k, j] := t1[B_COL * i + k, j];
-
-  for i := 0 to DIM2 - 1 do
-    rc_set[i] := t2[i div DIM, i mod DIM] + 1;
+  for b := 0 to DIM - 1 do
+    for k := 0 to DIM - 1 do
+      rc_set[DIM * bk_to_r(b, k) + bk_to_c(b, k)] :=
+        (k + B_COL * (b mod B_ROW) + (b div B_ROW)) mod DIM + 1;
   PrintCurrentPuzzle;
   initBitArraysFromGivens;
 
@@ -3098,7 +3089,7 @@ end;
 
 procedure TForm1.BLowClueGridClick(Sender: TObject);
 var
-  i, j, k: Integer;
+  i, j, b, k: Integer;
   t1, t2: array of ByteArr;
   a: array of Integer;
   fillMode, statechange: Boolean;
@@ -3110,27 +3101,10 @@ begin
     Memo1.Lines.Add('');
     Exit;
   end;
-  SetLength(t1, DIM, DIM);
-  SetLength(t2, DIM, DIM);
-  for i := 0 to DIM - 1 do
-    for j := 0 to DIM - 1 do
-      t1[i, j] := (i + j) mod DIM;
-
-  for k := 0 to B_COL - 1 do
-    for i := 0 to B_ROW - 1 do
-      for j := 0 to DIM - 1 do
-        t2[i + B_ROW * k, j] := t1[B_COL * i + k, j];
-
-  for i := 0 to DIM2 - 1 do
-    rc_set[i] := t2[i div DIM, i mod DIM] + 1;
-
-  SetLength(a, B_ROW);
-  for i := 0 to B_ROW - 1 do
-    a[i] := i;
-
-  for i := 0 to B_ROW - 1 do
-    a[i] := B_ROW - 1 - i;
-
+ for b := 0 to DIM - 1 do
+    for k := 0 to DIM - 1 do
+      rc_set[DIM * bk_to_r(b, k) + bk_to_c(b, k)] :=
+        (k + B_COL * (b mod B_ROW) + (b div B_ROW)) mod DIM + 1;
   for k := 0 to DIM - 1 do // row
   begin
     if rc_set[DIM * k] < (DIM + 1) div 2 then
@@ -3146,8 +3120,8 @@ begin
         fillMode := false;
         statechange := true;
       end;
-      if (not fillMode) and (rc_set[DIM * k + i] = (DIM + 1) div 2) and not statechange and (i>0)
-      then
+      if (not fillMode) and (rc_set[DIM * k + i] = (DIM + 1) div 2) and
+        not statechange and (i > 0) then
       begin
         fillMode := true;
         statechange := true;
