@@ -13,7 +13,7 @@ uses
 const
 
 {$IFDEF BIG}
-  N_MAXBOXLENGTH = 20; // Values up to 31 possible
+  N_MAXBOXLENGTH = 21; // Values up to 31 possible
   N_BIG = (N_MAXBOXLENGTH * N_MAXBOXLENGTH) div 64 + 1;
 {$ELSE}
   N_MAXBOXLENGTH = 15;
@@ -3101,7 +3101,7 @@ var
   i, j, k: Integer;
   t1, t2: array of ByteArr;
   a: array of Integer;
-  b: array of array of Integer;
+  fillMode, statechange: Boolean;
 begin
   if CheckSudokuX.Checked then
   begin
@@ -3125,34 +3125,37 @@ begin
     rc_set[i] := t2[i div DIM, i mod DIM] + 1;
 
   SetLength(a, B_ROW);
-  SetLength(b, DIM, DIM);
   for i := 0 to B_ROW - 1 do
     a[i] := i;
 
   for i := 0 to B_ROW - 1 do
     a[i] := B_ROW - 1 - i;
 
-  for i := 0 to B_ROW - 1 do // stacks
-    for j := 0 to B_COL - 1 do // columns within stack
-      for k := 0 to DIM - 1 do // elements of column
-        b[k, B_COL * a[i] + j] := rc_set[DIM * k + B_COL * i + j];
-  for i := 0 to B_ROW - 1 do
-    for j := 0 to B_COL - 1 do
-      for k := 0 to DIM - 1 do
+  for k := 0 to DIM - 1 do // row
+  begin
+    if rc_set[DIM * k] < (DIM + 1) div 2 then
+      fillMode := true
+    else
+      fillMode := false;
+    statechange := false;
+    for i := 0 to DIM - 1 do // col
+    begin
+      if (fillMode) and (rc_set[DIM * k + i] = (DIM + 1) div 2) and not statechange
+      then
       begin
-        if (i = 0) and (j < B_COL) and (k mod B_ROW = B_ROW - 1) and
-          (j >= B_COL - k div B_ROW) then
-          rc_set[DIM * k + B_COL * i + j] := b[k, B_COL * i + j]
-        else if (i > 0) and (i <= B_ROW div 2 - 1) and
-          (k mod B_ROW > B_ROW - 1 - i) then
-          rc_set[DIM * k + B_COL * i + j] := b[k, B_COL * i + j]
-        else if (i > B_ROW div 2 - 1) and (k mod B_ROW > B_ROW - 1 - i) and
-          (k mod B_ROW <= B_ROW - 1 - i + B_ROW div 2) then
-          rc_set[DIM * k + B_COL * i + j] := b[k, B_COL * i + j]
-
-        else
-          rc_set[DIM * k + B_COL * i + j] := 0;
+        fillMode := false;
+        statechange := true;
       end;
+      if (not fillMode) and (rc_set[DIM * k + i] = (DIM + 1) div 2) and not statechange and (i>0)
+      then
+      begin
+        fillMode := true;
+        statechange := true;
+      end;
+      if not fillMode then
+        rc_set[DIM * k + i] := 0;
+    end;
+  end;
 
   PrintCurrentPuzzle;
   initBitArraysFromGivens;
