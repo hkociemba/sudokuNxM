@@ -2899,12 +2899,15 @@ end;
 procedure TForm1.BCreateClick(Sender: TObject);
 var
   a: array of Integer;
-  i, j, r, e, eOld, eNew, tmp: Integer;
+  i, j, k, r, e, eOld, eNew, eminPrint, tmp: Integer;
   cnt: UINT64;
   tm: Cardinal;
+const
+  SWAPMAX = UINT64(1000000); // 1,000,000
 begin
   if CheckSudokuX.Checked or CheckSudokuP.Checked then
   begin
+
     Memo1.Lines.Add('');
     Memo1.Lines.Add
       ('Random Grid generation not implemented for SudokuX and SudokuP');
@@ -2931,60 +2934,66 @@ begin
   for i := 0 to DIM - 1 do
     a[i] := i;
 
-  for i := 0 to DIM - 1 do
-  begin
-    permuteArray(a);
-    for j := 0 to DIM - 1 do
-      rc_set[DIM * i + j] := a[j];
-  end;
-
   // each row now contains numbers 0..n-1 in random order
-  Memo1.Lines.Add(IntToStr(n_error()));
-  e := n_error();
-  cnt := 0;
-  while (e > 0) and not stopComputation do
-  begin
-    Inc(cnt);
-    r := Random(DIM);
-    // row
-
-    i := Random(DIM); // places to swap in row
-    if CheckSudokuX.Checked then
+  repeat
+    cnt := 0;
+    for i := 0 to DIM - 1 do
     begin
-      if (r = i) or (r = DIM - 1 - i) then
-        continue;
+      permuteArray(a);
+      for j := 0 to DIM - 1 do
+        rc_set[DIM * i + j] := a[j];
     end;
-
-    j := Random(DIM);
-    if CheckSudokuX.Checked then
+    e := n_error();
+    eminPrint := e;
+    Memo1.Lines.Add(IntToStr(n_error()));
+    while (e > 0) and not stopComputation and (cnt < SWAPMAX) do
     begin
-      if (r = j) or (r = DIM - 1 - j) then
+      Inc(cnt);
+      r := Random(DIM); // row
+      i := Random(DIM); // first places to swap in row
+      if CheckSudokuX.Checked then
+      begin
+        if (r = i) or (r = DIM - 1 - i) then
+          continue;
+      end;
+
+      j := Random(DIM); // second places to swap in row
+      if CheckSudokuX.Checked then
+      begin
+        if (r = j) or (r = DIM - 1 - j) then
+          continue;
+      end;
+
+      if i = j then
         continue;
-    end;
 
-    if i = j then
-      continue;
-
-    eOld := n_rcError(r, i, j);
-    tmp := rc_set[DIM * r + i];
-    rc_set[DIM * r + i] := rc_set[DIM * r + j];
-    rc_set[DIM * r + j] := tmp;
-    eNew := n_rcError(r, i, j);
-
-    if eNew > eOld then // swap back
-    begin
+      eOld := n_rcError(r, i, j);
       tmp := rc_set[DIM * r + i];
       rc_set[DIM * r + i] := rc_set[DIM * r + j];
       rc_set[DIM * r + j] := tmp;
-    end
-    else
-      e := e - eOld + eNew;
-    if cnt mod 10000 = 0 then
-    begin
-      Memo1.Lines.Add(IntToStr(e));
-      Application.ProcessMessages;
+      eNew := n_rcError(r, i, j);
+
+      if eNew > eOld then // swap back
+      begin
+        tmp := rc_set[DIM * r + i];
+        rc_set[DIM * r + i] := rc_set[DIM * r + j];
+        rc_set[DIM * r + j] := tmp;
+        Dec(cnt);
+      end
+      else
+        e := e - eOld + eNew;
+      if (cnt mod Min(1000, SWAPMAX - 1) = 0) then
+      begin
+        if e < eminPrint then
+        begin
+          eminPrint := e;
+          Memo1.Lines.Add('Errors left: ' + IntToStr(e));
+        end;
+        Application.ProcessMessages;
+      end;
     end;
-  end;
+  until (cnt < SWAPMAX) or stopComputation;
+
   for i := 0 to DIM2 - 1 do
   begin
     Inc(rc_set[i]); // make puzzle 1-based
@@ -3000,7 +3009,8 @@ begin
     Memo1.Lines.Add('Grid generation aborted.');
     stopComputation := false;
   end;
-  Memo1.Lines.Add(FloatToStr((getTickcount - tm) / 1000) + ' s total time.');
+  Memo1.Lines.Add(IntToStr(cnt) + ' swaps, ' + FloatToStr((getTickcount - tm) /
+    1000) + ' s total time.');
   BSATSolver.Enabled := true;
   BReduceBasic.Enabled := true;
   BReduceSAT.Enabled := true;
@@ -3101,7 +3111,7 @@ begin
     Memo1.Lines.Add('');
     Exit;
   end;
- for b := 0 to DIM - 1 do
+  for b := 0 to DIM - 1 do
     for k := 0 to DIM - 1 do
       rc_set[DIM * bk_to_r(b, k) + bk_to_c(b, k)] :=
         (k + B_COL * (b mod B_ROW) + (b div B_ROW)) mod DIM + 1;
@@ -3487,7 +3497,8 @@ begin
 
   for i := 0 to DIM2 - 1 do
     randArr[i] := i;
-  permuteArray(randArr); // generate random array
+  permuteArray(randArr);
+  // generate random array
 
   for i := 0 to DIM2 - 1 do
   begin
