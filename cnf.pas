@@ -264,6 +264,44 @@ begin
   end;
 end;
 
+//clauses for Windoku
+procedure window_clauses(clauses: TStringList);
+var
+  win, k, k2, num: Integer;
+  s: String;
+begin
+  for win := 0 to DIMWIN - 1 do // Window
+  begin
+    for num := 1 to DIM do
+    begin
+      // each window contains each number at least once, dim*dimwin clauses
+      s := '';
+      for k := 0 to DIM - 1 do // iterate over window elements
+        if rcQ(wk_to_r(win, k), wk_to_c(win, k), num - 1) then
+          s := s + varname(wk_to_r(win, k), wk_to_c(win, k), num) + ' ';
+      if s <> '' then
+      begin
+        clauses.Add(s + '0');
+        Inc(n_clauses_eff);
+      end;
+      // never two same numbers in same window, dim*dimwin*Binomial(dim,2) clauses
+      for k := 0 to DIM - 2 do
+        if rcQ(wk_to_r(win, k), wk_to_c(win, k), num - 1) or
+          (rc_set[DIM * wk_to_r(win, k) + wk_to_c(win, k)] = num) then
+          for k2 := k + 1 to DIM - 1 do
+            if rcQ(wk_to_r(win, k2), wk_to_c(win, k2), num - 1) or
+              (rc_set[DIM * wk_to_r(win, k2) + wk_to_c(win, k2)] = num) then
+            begin
+              clauses.Add('-' + varname(wk_to_r(win, k), wk_to_c(win, k), num) +
+                ' -' + varname(wk_to_r(win, k2), wk_to_c(win, k2), num) + ' 0');
+              Inc(n_clauses_eff);
+            end;
+    end;
+  end;
+end;
+
+
+
 procedure XSudoku_clauses(clauses: TStringList);
 var
   k, k2, num: Integer;
@@ -337,6 +375,8 @@ begin
     XSudoku_clauses(clauses);
   if Form1.CheckSudokuP.Checked then
     pos_clauses(clauses);
+  if Form1.CheckSudokuW.Checked then
+    window_clauses(clauses);
 
   clauses.Strings[2] := 'p cnf ' + IntToStr(n_variables) + ' ' +
     IntToStr(n_clauses_eff);

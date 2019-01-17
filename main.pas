@@ -78,6 +78,7 @@ type
     CheckSudokuP: TCheckBox;
     BReduceSAT: TButton;
     BLowClueGrid: TButton;
+    CheckSudokuW: TCheckBox;
     procedure BSATSolverClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure BLoadClick(Sender: TObject);
@@ -124,7 +125,7 @@ type
 
 var
   Form1: TForm1;
-  B_ROW, B_COL, DIM, DIM2, DIM3: Integer;
+  B_ROW, B_COL, DIM, DIM2, DIM3, DIMWIN: Integer;
   // Block size may be different in both directions
   rc_n, rn_c, cn_r, bn_k, pn_k: BigIntArr;
 
@@ -148,6 +149,9 @@ var
 function rcQ(r, c, n: Integer): Boolean;
 function bk_to_r(box, index: Integer): Integer;
 function bk_to_c(box, index: Integer): Integer;
+
+function wk_to_r(win, index: Integer): Integer;
+function wk_to_c(win, index: Integer): Integer;
 
 function custom_split(input: string): TArray<string>;
 
@@ -463,6 +467,18 @@ begin
   Result := B_COL * (index mod B_ROW) + pset mod B_COL
 end;
 
+// returns row for cell with index in window
+function wk_to_r(win, index: Integer): Integer;
+begin
+  Result := (B_ROW + 1) * (win div (B_ROW - 1)) + 1 + index div B_ROW
+end;
+
+// returns column for cell with index in window
+function wk_to_c(win, index: Integer): Integer;
+begin
+  Result := (B_ROW + 1) * (win mod (B_ROW - 1)) + 1 + index mod B_ROW
+end;
+
 // clear column c in columnvector of row r and number n
 procedure clear_rn(r, c, n: Integer);
 var
@@ -632,7 +648,7 @@ end;
 
 procedure setNumber(r, c, n: Integer);
 var
-  j, b, p: Integer;
+  j, b, p, w: Integer;
 begin
   Inc(n_set);
   b := B_ROW * (r div B_ROW) + c div B_COL;
@@ -659,6 +675,16 @@ begin
     if r = DIM - 1 - c then // set on antidiagonal
       for j := 0 to DIM - 1 do
         deleteCandidate(j, DIM - 1 - j, n);
+  end;
+
+  if Form1.CheckSudokuW.Checked then
+  begin
+    if (r mod (B_ROW + 1) <> 0) and (c mod (B_ROW + 1) <> 0) then
+    begin //number is inside a window
+      w := (B_ROW-1)*(r div (B_ROW+1))+c div(B_ROW+1); // window index;
+      for j := 0 to DIM - 1 do
+        deleteCandidate(wk_to_r(w, j), wk_to_c(w, j), n);
+    end;
   end;
 
   rc_set[DIM * r + c] := n + 1;
@@ -2474,6 +2500,9 @@ begin
   DIM2 := DIM * DIM; // Number of cells in puzzle
   DIM3 := DIM2 * DIM; // number of candidates
 
+  DIMWIN := (B_ROW - 1) * (B_COL - 1);
+  // Number of Windoku windows, valid only for B_ROW = B_COL
+
   SpinEditMaxHiddenTuple.MaxValue := DIM div 2;
   SpinEditMaxNakedTuple.MaxValue := DIM div 2;
   SpinEditMaxFish.MaxValue := DIM div 2;
@@ -2615,6 +2644,8 @@ begin
   DIM2 := DIM * DIM; // Number of cells in puzzle
   DIM3 := DIM2 * DIM; // number of candidates
 
+  DIMWIN := (B_ROW - 1) * (B_COL - 1); // Number of Windoku windows
+
   SpinEditMaxHiddenTuple.MaxValue := DIM div 2;
   SpinEditMaxNakedTuple.MaxValue := DIM div 2;
   SpinEditMaxFish.MaxValue := DIM div 2;
@@ -2636,6 +2667,7 @@ begin
   init_bitmasks;
   CheckSudokuX.Checked := false;
   CheckSudokuX.Enabled := (B_ROW = B_COL);
+  CheckSudokuW.Enabled := CheckSudokuX.Enabled;
   if B_COL * B_ROW > 36 then
   begin
     CheckSATSolver.Caption := 'SAT Solver (eventually slow)';
@@ -2656,6 +2688,8 @@ begin
   DIM := B_ROW * B_COL;
   DIM2 := DIM * DIM;
   DIM3 := DIM2 * DIM;
+
+  DIMWIN := (B_ROW - 1) * (B_COL - 1); // Number of Windoku windows
 
   SpinEditMaxHiddenTuple.MaxValue := DIM div 2;
   SpinEditMaxNakedTuple.MaxValue := DIM div 2;
@@ -2680,6 +2714,7 @@ begin
   init_bitmasks;
   CheckSudokuX.Checked := false;
   CheckSudokuX.Enabled := (B_ROW = B_COL);
+  CheckSudokuW.Enabled := CheckSudokuX.Enabled;
   if B_COL * B_ROW > 36 then
   begin
     CheckSATSolver.Caption := 'SAT Solver (eventually slow)';
@@ -2794,6 +2829,26 @@ begin
   end;
 end;
 
+function win_error(w: Integer): Integer;
+var
+  t: array of Integer;
+  r, c, k, i: Integer;
+begin
+  Result := 0;
+  SetLength(t, DIM);
+  for k := 0 to DIM - 1 do
+  begin
+    r := wk_to_r(w, k);
+    c := wk_to_c(w, k);
+    Inc(t[rc_set[DIM * r + c]]);
+  end;
+  for i := 0 to DIM - 1 do
+  begin
+    if t[i] <> 1 then
+      Inc(Result);
+  end;
+end;
+
 function X_error(): Integer;
 var
   t: array of Integer;
@@ -2853,6 +2908,12 @@ begin
       Inc(Result, pSet_error(p));
   end;
 
+  if Form1.CheckSudokuW.Checked then
+  begin
+    for p := 0 to DIMWIN - 1 do
+      Inc(Result, win_error(p));
+  end;
+
   if Form1.CheckSudokuX.Checked then
   begin
     Inc(Result, X_error());
@@ -2905,12 +2966,12 @@ var
 const
   SWAPMAX = UINT64(1000000); // 1,000,000
 begin
-  if CheckSudokuX.Checked or CheckSudokuP.Checked then
+  if CheckSudokuX.Checked or CheckSudokuP.Checked or CheckSudokuW.Checked then
   begin
 
     Memo1.Lines.Add('');
     Memo1.Lines.Add
-      ('Random Grid generation not implemented for SudokuX and SudokuP');
+      ('Random Grid generation not implemented for SudokuX, SudokuP and SudokuW');
     Memo1.Lines.Add('');
     Exit;
   end;
@@ -4021,7 +4082,7 @@ begin
   for i := 0 to DIM2 - 1 do
     Dec(rc_set[i]);
   try
-    if n_error = 0 then
+    if n_error() = 0 then
       Memo1.Lines.Add('Solution is valid!')
     else
       Memo1.Lines.Add('Solution is invalid!');

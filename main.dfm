@@ -249,7 +249,7 @@ object Form1: TForm1
     end
   end
   object GroupBox3: TGroupBox
-    Left = 154
+    Left = 155
     Top = 546
     Width = 160
     Height = 187
@@ -261,7 +261,7 @@ object Form1: TForm1
       187)
     object BSATSolver: TButton
       Left = 17
-      Top = 79
+      Top = 89
       Width = 123
       Height = 25
       Anchors = [akLeft, akBottom]
@@ -280,7 +280,7 @@ object Form1: TForm1
     end
     object CheckSudokuX: TCheckBox
       Left = 79
-      Top = 19
+      Top = 20
       Width = 65
       Height = 15
       Anchors = [akLeft, akBottom]
@@ -299,7 +299,7 @@ object Form1: TForm1
     end
     object BAddSolution: TButton
       Left = 17
-      Top = 110
+      Top = 120
       Width = 122
       Height = 25
       Anchors = [akLeft, akBottom]
@@ -310,11 +310,19 @@ object Form1: TForm1
     end
     object CheckSudokuP: TCheckBox
       Left = 79
-      Top = 40
+      Top = 41
       Width = 97
       Height = 17
       Caption = 'SudokuP'
       TabOrder = 5
+    end
+    object CheckSudokuW: TCheckBox
+      Left = 79
+      Top = 63
+      Width = 97
+      Height = 20
+      Caption = 'SudokuW'
+      TabOrder = 6
     end
   end
   object GroupBox4: TGroupBox
