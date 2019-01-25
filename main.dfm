@@ -289,7 +289,7 @@ object Form1: TForm1
     end
     object BCheckSolution: TButton
       Left = 17
-      Top = 154
+      Top = 151
       Width = 123
       Height = 25
       Anchors = [akLeft, akBottom]
@@ -501,7 +501,7 @@ object Form1: TForm1
       OnClick = BCreateClick
     end
     object BDefault: TButton
-      Left = 16
+      Left = 17
       Top = 17
       Width = 121
       Height = 25

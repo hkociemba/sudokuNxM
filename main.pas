@@ -680,8 +680,9 @@ begin
   if Form1.CheckSudokuW.Checked then
   begin
     if (r mod (B_ROW + 1) <> 0) and (c mod (B_ROW + 1) <> 0) then
-    begin //number is inside a window
-      w := (B_ROW-1)*(r div (B_ROW+1))+c div(B_ROW+1); // window index;
+    begin // number is inside a window
+      w := (B_ROW - 1) * (r div (B_ROW + 1)) + c div (B_ROW + 1);
+      // window index;
       for j := 0 to DIM - 1 do
         deleteCandidate(wk_to_r(w, j), wk_to_c(w, j), n);
     end;
@@ -2260,7 +2261,7 @@ procedure TForm1.BSATSolverClick(Sender: TObject);
 var
   clauses: TStringList;
   progress: Integer;
-  i, mx, tme: Integer;
+  i, r, c, mx, tme, b: Integer;
 Label restart, xxx;
 begin
 
@@ -2272,7 +2273,8 @@ begin
   else
   begin
     stopComputation := false;
-    BSATSolver.Caption := 'Abort'
+    BSATSolver.Caption := 'Abort';
+    BSATSolver.Enabled:=true;
   end;
 
   if stopComputation then
@@ -2287,7 +2289,22 @@ begin
   tme := getTickcount;
 
   if Sender = nil then
-    goto xxx; // search for other solutions
+    goto xxx // search for other solutions
+  else if Sender = BDefault then // Default grid for W and PW-Sudokus
+  begin
+    for r := 0 to DIM - 1 do
+      for c := 0 to DIM - 1 do
+      begin
+        b := (B_ROW * r mod DIM + B_ROW * (c div B_ROW)) mod DIM;
+        for i := 0 to DIM - 1 do
+        begin
+          if (i >= b) and (i < b + B_ROW) then
+            continue;
+          deleteCandidate(r, c, i);
+        end;
+      end;
+
+  end;
 
   // try to reduce the number of candidates first
   if CheckVerbose.Checked then
@@ -2396,10 +2413,13 @@ begin
 
   until (n_cand_del = progress) or (n_cand_del = DIM3);
 
-  if CheckSATSolver.Checked and (n_cand_del < DIM3) then
+  if CheckSATSolver.Checked and (n_cand_del < DIM3) or (Sender = BDefault) then
   begin
     Memo1.Lines.Add('');
-    Memo1.Lines.Add('Invoking SAT-solver to finish solving process...');
+    if Sender = BDefault then
+      Memo1.Lines.Add('Invoking SAT-solver to create default grid...')
+    else
+      Memo1.Lines.Add('Invoking SAT-solver to finish solving process...');
     Memo1.Lines.Add('');
 
     clauses := TStringList.Create;
@@ -2433,10 +2453,11 @@ begin
           Memo1.Lines.Add('SAT Solver aborted!')
         else if Sender = nil then
           Memo1.Lines.Add('This is a different solution! ')
+        else if Sender = BDefault then
+          Memo1.Lines.Add('Default grid created by SAT solver.')
         else
           Memo1.Lines.Add
             ('Puzzle solved! To check uniqueness use button "Find different solution".');
-
         BAddSolution.Enabled := true;
       end
       else
@@ -3082,20 +3103,33 @@ procedure TForm1.BDefaultClick(Sender: TObject);
 var
   b, k: Integer;
   t1, t2: array of ByteArr;
+  i: Integer;
 begin
-  if CheckSudokuX.Checked then
+  // if CheckSudokuX.Checked then
+  // begin
+  // Memo1.Lines.Add('');
+  // Memo1.Lines.Add('Default Grid not implemented for SudokuX');
+  // Memo1.Lines.Add('');
+  // Exit;
+  // end;
+  if not(CheckSudokuW.Checked or CheckSudokuX.Checked) then
   begin
-    Memo1.Lines.Add('');
-    Memo1.Lines.Add('Default Grid not implemented for SudokuX');
-    Memo1.Lines.Add('');
-    Exit;
+    for b := 0 to DIM - 1 do
+      for k := 0 to DIM - 1 do
+        rc_set[DIM * bk_to_r(b, k) + bk_to_c(b, k)] :=
+          (k + B_COL * (b mod B_ROW) + (b div B_ROW)) mod DIM + 1;
+    PrintCurrentPuzzle;
+    initBitArraysFromGivens
+  end
+  else // use SAT-solver to find valid puzzle
+  begin
+    for i := 0 to DIM - 1 do
+      rc_set[i] := i + 1;
+    for i := DIM to DIM2 - 1 do
+      rc_set[i] := 0;
+
+    BSATSolverClick(Sender)
   end;
-  for b := 0 to DIM - 1 do
-    for k := 0 to DIM - 1 do
-      rc_set[DIM * bk_to_r(b, k) + bk_to_c(b, k)] :=
-        (k + B_COL * (b mod B_ROW) + (b div B_ROW)) mod DIM + 1;
-  PrintCurrentPuzzle;
-  initBitArraysFromGivens;
 
   BSATSolver.Enabled := true;
   BReduceBasic.Enabled := true;
@@ -4282,7 +4316,8 @@ begin
   // PrintCurrentPuzzle;
   // Exit;
 
-  if not(CheckSudokuX.Checked or CheckSudokuP.Checked) then
+  if not(CheckSudokuX.Checked or CheckSudokuP.Checked or CheckSudokuW.Checked)
+  then
   begin
     for i := 0 to B_COL - 1 do
       rndpermute_band(i);
@@ -4295,7 +4330,8 @@ begin
 
   end;
 
-  if CheckSudokuP.Checked then
+  if CheckSudokuP.Checked and not(CheckSudokuX.Checked or CheckSudokuW.Checked)
+  then
   begin
     rndpermute_bands_synchron;
     rndpermute_stacks_synchron;
@@ -4304,7 +4340,7 @@ begin
     rndpermute_bands;
     rndpermute_stacks;
   end;
-  // Only operation for sudokuX
+  // Only operation for all sudokus
   rndrelable();
   PrintCurrentPuzzle;
 end;
