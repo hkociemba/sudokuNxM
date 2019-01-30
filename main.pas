@@ -79,6 +79,7 @@ type
     BReduceSAT: TButton;
     BLowClueGrid: TButton;
     CheckSudokuW: TCheckBox;
+    CheckNC: TCheckBox;
     procedure BSATSolverClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure BLoadClick(Sender: TObject);
@@ -685,6 +686,30 @@ begin
       // window index;
       for j := 0 to DIM - 1 do
         deleteCandidate(wk_to_r(w, j), wk_to_c(w, j), n);
+    end;
+  end;
+
+  if Form1.CheckNC.Checked then
+  begin
+    if r <> 0 then
+    begin
+      deleteCandidate(r - 1, c, (n - 1 + DIM) mod DIM);
+      deleteCandidate(r - 1, c, (n + 1) mod DIM);
+    end;
+    if r <> DIM - 1 then
+    begin
+      deleteCandidate(r + 1, c, (n - 1 + DIM) mod DIM);
+      deleteCandidate(r + 1, c, (n + 1) mod DIM);
+    end;
+    if c <> 0 then
+    begin
+      deleteCandidate(r, c - 1, (n - 1 + DIM) mod DIM);
+      deleteCandidate(r, c - 1, (n + 1) mod DIM);
+    end;
+    if c <> DIM - 1 then
+    begin
+      deleteCandidate(r, c + 1, (n - 1 + DIM) mod DIM);
+      deleteCandidate(r, c + 1, (n + 1) mod DIM);
     end;
   end;
 
@@ -2274,7 +2299,7 @@ begin
   begin
     stopComputation := false;
     BSATSolver.Caption := 'Abort';
-    BSATSolver.Enabled:=true;
+    BSATSolver.Enabled := true;
   end;
 
   if stopComputation then
@@ -2290,7 +2315,9 @@ begin
 
   if Sender = nil then
     goto xxx // search for other solutions
-  else if Sender = BDefault then // Default grid for W and PW-Sudokus
+  else if (Sender = BDefault) and
+    not(CheckNC.Checked and ((B_ROW < 5) or (B_COL < 5))) then
+  // Restricted default grid for W and PW-Sudokus
   begin
     for r := 0 to DIM - 1 do
       for c := 0 to DIM - 1 do
@@ -2463,7 +2490,9 @@ begin
       else
       begin
         Memo1.Lines.Add('');
-        if Sender <> nil then
+        if Sender = BDefault then
+          Memo1.Lines.Add('Could not find a valid grid, eventually it does not exist!')
+        else if Sender <> nil then
           Memo1.Lines.Add('Puzzle is unsolvable!')
         else // in this case Button "Find different solution" was pressed
           Memo1.Lines.Add('There is no other solution!')
@@ -2687,6 +2716,7 @@ begin
 
   init_bitmasks;
   CheckSudokuX.Checked := false;
+  CheckSudokuW.Checked := false;
   CheckSudokuX.Enabled := (B_ROW = B_COL);
   CheckSudokuW.Enabled := CheckSudokuX.Enabled;
   if B_COL * B_ROW > 36 then
@@ -2734,6 +2764,7 @@ begin
 
   init_bitmasks;
   CheckSudokuX.Checked := false;
+  CheckSudokuW.Checked := false;
   CheckSudokuX.Enabled := (B_ROW = B_COL);
   CheckSudokuW.Enabled := CheckSudokuX.Enabled;
   if B_COL * B_ROW > 36 then
@@ -2870,6 +2901,30 @@ begin
   end;
 end;
 
+function NC_error(): Integer;
+var
+  r, c, k, i: Integer;
+begin
+  Result := 0;
+
+  for r := 0 to DIM - 1 do
+    for c := 0 to DIM - 2 do
+      if abs(rc_set[DIM * r + c] - rc_set[DIM * r + c + 1]) = 1 then
+        Inc(Result);
+  for c := 0 to DIM - 1 do
+    for r := 0 to DIM - 2 do
+      if abs(rc_set[DIM * r + c] - rc_set[DIM * (r + 1) + c]) = 1 then
+        Inc(Result);
+  for r := 0 to DIM - 1 do
+    for c := 0 to DIM - 2 do
+      if abs(rc_set[DIM * r + c] - rc_set[DIM * r + c + 1]) = DIM - 1 then
+        Inc(Result);
+  for c := 0 to DIM - 1 do
+    for r := 0 to DIM - 2 do
+      if abs(rc_set[DIM * r + c] - rc_set[DIM * (r + 1) + c]) = DIM - 1 then
+        Inc(Result);
+end;
+
 function X_error(): Integer;
 var
   t: array of Integer;
@@ -2940,6 +2995,11 @@ begin
     Inc(Result, X_error());
   end;
 
+  if Form1.CheckNC.Checked then
+  begin
+    Inc(Result, NC_error());
+  end;
+
 end;
 
 // Errors in blocks and columns, which are affected by swapping emtries (r,c1)
@@ -2987,12 +3047,13 @@ var
 const
   SWAPMAX = UINT64(1000000); // 1,000,000
 begin
-  if CheckSudokuX.Checked or CheckSudokuP.Checked or CheckSudokuW.Checked then
+  if CheckSudokuX.Checked or CheckSudokuP.Checked or CheckSudokuW.Checked or
+    CheckNC.Checked then
   begin
 
     Memo1.Lines.Add('');
     Memo1.Lines.Add
-      ('Random Grid generation not implemented for SudokuX, SudokuP and SudokuW');
+      ('Random Grid generation not implemented for SudokuX, SudokuP, SudokuW and NC+');
     Memo1.Lines.Add('');
     Exit;
   end;
@@ -3112,7 +3173,7 @@ begin
   // Memo1.Lines.Add('');
   // Exit;
   // end;
-  if not(CheckSudokuW.Checked or CheckSudokuX.Checked) then
+  if not(CheckSudokuW.Checked or CheckSudokuX.Checked or CheckNC.Checked) then
   begin
     for b := 0 to DIM - 1 do
       for k := 0 to DIM - 1 do
@@ -3123,10 +3184,12 @@ begin
   end
   else // use SAT-solver to find valid puzzle
   begin
-    for i := 0 to DIM - 1 do
-      rc_set[i] := i + 1;
-    for i := DIM to DIM2 - 1 do
+
+    for i := 0 to DIM2 - 1 do
       rc_set[i] := 0;
+    if not CheckNC.Checked then
+      for i := 0 to DIM - 1 do
+        rc_set[i] := i + 1;
 
     BSATSolverClick(Sender)
   end;
@@ -3934,6 +3997,7 @@ var
   removable: array of Boolean;
   alldone: Boolean;
   tme: Cardinal;
+  s: String;
 begin
   // get symmetry
 
@@ -4064,9 +4128,12 @@ begin
           begin
             if not SATKilled then
             begin
+              if sym = 0 then
+                s := IntToStr(givens + 1) + ' givens left. ('
+              else
+                s := '(';
               Memo1.Lines.Add('Random cell ' + IntToStr(i) + ' is unremovable, '
-                + IntToStr(givens + 1) + ' givens left. (' +
-                FloatToStr((getTickcount - tme) / 1000) + ' s)');
+                + s + FloatToStr((getTickcount - tme) / 1000) + ' s)');
               Memo1.Lines.Add('')
             end;
           end;
@@ -4340,8 +4407,9 @@ begin
     rndpermute_bands;
     rndpermute_stacks;
   end;
-  // Only operation for all sudokus
-  rndrelable();
+  // Only operation for all sudokus except NC+
+  if not CheckNC.Checked then
+    rndrelable();
   PrintCurrentPuzzle;
 end;
 

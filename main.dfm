@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 343
   Top = 300
   Anchors = []
-  Caption = 'SATSudoku 0.96'
+  Caption = 'SATSudoku 0.97'
   ClientHeight = 741
   ClientWidth = 931
   Color = clBtnFace
@@ -324,6 +324,14 @@ object Form1: TForm1
       Caption = 'SudokuW'
       TabOrder = 6
     end
+    object CheckNC: TCheckBox
+      Left = 17
+      Top = 64
+      Width = 57
+      Height = 17
+      Caption = 'NC+'
+      TabOrder = 7
+    end
   end
   object GroupBox4: TGroupBox
     Left = 530
@@ -501,7 +509,7 @@ object Form1: TForm1
       OnClick = BCreateClick
     end
     object BDefault: TButton
-      Left = 17
+      Left = 16
       Top = 17
       Width = 121
       Height = 25
@@ -529,12 +537,12 @@ object Form1: TForm1
     end
   end
   object OpenDialog1: TOpenDialog
-    Left = 160
-    Top = 584
+    Left = 64
+    Top = 552
   end
   object PopupMenu1: TPopupMenu
-    Left = 192
-    Top = 584
+    Left = 104
+    Top = 552
     object Paste1: TMenuItem
       Caption = 'Paste'
       ShortCut = 16470
