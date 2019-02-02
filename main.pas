@@ -2293,13 +2293,17 @@ begin
   if BSATSolver.Caption = 'Abort' then
   begin
     stopComputation := true;
-    BSATSolver.Caption := 'Solve puzzle'
+    BSATSolver.Caption := 'Solve puzzle';
+    SpinEditRow.Enabled := true;
+    SpinEditCol.Enabled := true;
   end
   else
   begin
     stopComputation := false;
     BSATSolver.Caption := 'Abort';
     BSATSolver.Enabled := true;
+    SpinEditRow.Enabled := false;
+    SpinEditCol.Enabled := false;
   end;
 
   if stopComputation then
@@ -2369,6 +2373,13 @@ begin
       if (n_cand_del > progress) and verbose then
         goto restart;
       hidden_single_col;
+
+      // if Form1.CheckSudokuX.Checked then
+      // begin
+      // hidden_single_diag1;
+      // hidden_single_diag2;
+      // end;
+
       if (n_cand_del > progress) and verbose then
         goto restart;
     end;
@@ -2391,6 +2402,14 @@ begin
       if (n_cand_del > progress) and verbose then
         goto restart;
       col_candidates_in_block;
+
+      // if Form1.CheckSudokuX.Checked then
+      // begin
+      // block_candidates_in_diag1;
+      // block_candidates_in_diag2;
+      // diag1_candidates_in_block;
+      // diag2_candidates_in_block;
+      // end;
     end;
 
     if n_cand_del > progress then
@@ -2410,6 +2429,13 @@ begin
         hidden_tuple_col(i);
         if (n_cand_del > progress) and verbose then
           goto restart;
+
+        // if Form1.CheckSudokuX.Checked then
+        // begin
+        // hidden_tuple_diag1(i);
+        // hidden_tuple_diag2(i);
+        // end;
+
       end;
       if Form1.CheckNakedTuple.Checked and
         (i <= Form1.SpinEditMaxNakedTuple.Value) then
@@ -2423,6 +2449,11 @@ begin
         naked_tuple_col(i);
         if (n_cand_del > progress) and verbose then
           goto restart;
+        // if Form1.CheckSudokuX.Checked then
+        // begin
+        // naked_tuple_diag1(i);
+        // naked_tuple_diag2(i);
+        //
       end;
       if Form1.CheckBasicFish.Checked and (i <= Form1.SpinEditMaxFish.Value)
       then
@@ -2491,7 +2522,8 @@ begin
       begin
         Memo1.Lines.Add('');
         if Sender = BDefault then
-          Memo1.Lines.Add('Could not find a valid grid, eventually it does not exist!')
+          Memo1.Lines.Add
+            ('Could not find a valid grid, eventually it does not exist!')
         else if Sender <> nil then
           Memo1.Lines.Add('Puzzle is unsolvable!')
         else // in this case Button "Find different solution" was pressed
@@ -2533,6 +2565,8 @@ begin
     Memo1.Lines.Add('');
   end;
   BSATSolver.Caption := 'Solve puzzle';
+  SpinEditRow.Enabled := true;
+  SpinEditCol.Enabled := true;
 
   Memo1.Lines.Add(FloatToStr((getTickcount - tme) / 1000) + ' s total time.');
   Memo1.Lines.Add('');
@@ -3061,16 +3095,24 @@ begin
   if BCreate.Caption = 'Abort' then
   begin
     stopComputation := true;
-    BCreate.Caption := 'Random Grid'
+    BCreate.Caption := 'Random Grid';
+    SpinEditRow.Enabled := true;
+    SpinEditCol.Enabled := true;
   end
   else
   begin
     stopComputation := false;
-    BCreate.Caption := 'Abort'
+    BCreate.Caption := 'Abort';
+    SpinEditRow.Enabled := false;
+    SpinEditCol.Enabled := false;
   end;
 
   if stopComputation then
+  begin
+    SpinEditRow.Enabled := true;
+    SpinEditCol.Enabled := true;
     Exit;
+  end;
 
   tm := getTickcount;
   SetLength(a, DIM);
@@ -3157,6 +3199,8 @@ begin
   BSATSolver.Enabled := true;
   BReduceBasic.Enabled := true;
   BReduceSAT.Enabled := true;
+  SpinEditRow.Enabled := true;
+  SpinEditCol.Enabled := true;
 end;
 
 // Button "Default grid" click
@@ -3166,13 +3210,6 @@ var
   t1, t2: array of ByteArr;
   i: Integer;
 begin
-  // if CheckSudokuX.Checked then
-  // begin
-  // Memo1.Lines.Add('');
-  // Memo1.Lines.Add('Default Grid not implemented for SudokuX');
-  // Memo1.Lines.Add('');
-  // Exit;
-  // end;
   if not(CheckSudokuW.Checked or CheckSudokuX.Checked or CheckNC.Checked) then
   begin
     for b := 0 to DIM - 1 do

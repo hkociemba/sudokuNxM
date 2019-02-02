@@ -355,7 +355,7 @@ var
   i, row, row2, col, col2, num, num2: Integer;
   s: String;
 const
-  DP = 1;//Up to this value cyclical differences are not allowed
+  DP = 1; // Up to this value cyclical differences are not allowed
 begin
   for i := 1 to DP do
     for num := 1 to DIM do
@@ -387,33 +387,36 @@ begin
             num) + ' 0');
           Inc(n_clauses_eff);
         end;
+
+       //add this for NC+ of the two diagonals
+//       for row := 0 to DIM - 1 - 1 do
+//       begin
+//         col := row;
+//         row2 := row + 1;
+//         col2 := col + 1;
+//         clauses.Add('-' + varname(row, col, num) + ' -' + varname(row2, col2,
+//           num2) + ' 0');
+//         Inc(n_clauses_eff);
+//         clauses.Add('-' + varname(row, col, num2) + ' -' + varname(row2, col2,
+//           num) + ' 0');
+//         Inc(n_clauses_eff);
+//       end;
+//
+//       for row := 0 to DIM - 1 - 1 do
+//       begin
+//         col := DIM - row - 1;
+//         row2 := row + 1;
+//         col2 := DIM - row2 - 1;
+//         clauses.Add('-' + varname(row, col, num) + ' -' + varname(row2, col2,
+//           num2) + ' 0');
+//         Inc(n_clauses_eff);
+//         clauses.Add('-' + varname(row, col, num2) + ' -' + varname(row2, col2,
+//           num) + ' 0');
+//         Inc(n_clauses_eff);
+//       end;
+
     end;
-  // add thin for NC+ of the two diagonals
-  // for row := 0 to DIM - 1 - 1 do
-  // begin
-  // col := row;
-  // row2 := row + 1;
-  // col2 := col + 1;
-  // clauses.Add('-' + varname(row, col, num) + ' -' + varname(row2, col2,
-  // num2) + ' 0');
-  // Inc(n_clauses_eff);
-  // clauses.Add('-' + varname(row, col, num2) + ' -' + varname(row2, col2,
-  // num) + ' 0');
-  // Inc(n_clauses_eff);
-  // end;
-  //
-  // for row := 0 to DIM - 1 - 1 do
-  // begin
-  // col := DIM-row-1;
-  // row2 := row + 1;
-  // col2 := DIM-row2 - 1;
-  // clauses.Add('-' + varname(row, col, num) + ' -' + varname(row2, col2,
-  // num2) + ' 0');
-  // Inc(n_clauses_eff);
-  // clauses.Add('-' + varname(row, col, num2) + ' -' + varname(row2, col2,
-  // num) + ' 0');
-  // Inc(n_clauses_eff);
-  // end;
+
 end;
 
 // generate cnf file in DIMACS format

@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 343
   Top = 300
   Anchors = []
-  Caption = 'SATSudoku 0.97'
+  Caption = 'SATSudoku 0.98'
   ClientHeight = 741
   ClientWidth = 931
   Color = clBtnFace
