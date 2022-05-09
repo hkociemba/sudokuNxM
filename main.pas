@@ -4217,6 +4217,8 @@ procedure TForm1.BCheckSolutionClick(Sender: TObject);
 var
   i: Integer;
 begin
+ if solutionValid then
+ begin
   for i := 0 to DIM2 - 1 do
     Dec(rc_set[i]);
   try
@@ -4228,6 +4230,11 @@ begin
     for i := 0 to DIM2 - 1 do
       Inc(rc_set[i]);
   end;
+ end
+ else
+ begin
+  Memo1.Lines.Add('Puzzle is not solved!')
+ end;
 end;
 
 procedure rndpermute_band(bnd: Integer);
